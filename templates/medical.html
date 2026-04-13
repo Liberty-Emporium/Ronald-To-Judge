@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Records — Jay Alexander</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f1f5f9; color: #1a1a2e; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      .record-card { page-break-inside: avoid; }
+    }
+
+    .top-bar { background: #1a1a2e; color: #a5b4fc; text-align: center; padding: 0.6rem 1rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .hero { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 3rem 1.5rem 2.5rem; text-align: center; }
+    .hero-badge { display: inline-block; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 0.35rem 1.1rem; border-radius: 100px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+    .hero h1 { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: #94a3b8; font-size: 0.92rem; max-width: 520px; margin: 0 auto; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* Nav buttons */
+    .nav-btns { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .nav-btn { display: inline-block; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; text-decoration: none; cursor: pointer; border: none; }
+    .btn-back { background: #e2e8f0; color: #1a1a2e; }
+    .btn-print { background: #1a1a2e; color: white; }
+    .btn-pdf { background: #6366f1; color: white; }
+
+    /* Context box */
+    .context-box { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+    .context-box h3 { color: #c2410c; font-size: 0.92rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .context-box p { color: #7c2d12; font-size: 0.87rem; line-height: 1.7; }
+
+    /* Slideshow */
+    .slideshow-section { margin-bottom: 2.5rem; }
+    .slideshow-section h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; color: #1a1a2e; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+
+    .slideshow { position: relative; background: #0f172a; border-radius: 14px; overflow: hidden; margin-bottom: 1rem; }
+    .slide { display: none; text-align: center; }
+    .slide.active { display: block; }
+    .slide img { max-width: 100%; max-height: 520px; width: auto; height: auto; display: block; margin: 0 auto; }
+    .slide-caption { background: rgba(0,0,0,0.7); color: #e2e8f0; padding: 0.75rem 1.25rem; font-size: 0.85rem; text-align: left; }
+    .slide-caption strong { color: #a5b4fc; }
+
+    .slideshow-controls { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .ctrl-btn { background: #1a1a2e; color: white; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+    .ctrl-btn:hover { background: #16213e; }
+    .slide-counter { font-size: 0.85rem; color: #6b7280; font-weight: 600; }
+
+    /* Thumbnail strip */
+    .thumb-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 3px solid transparent; cursor: pointer; }
+    .thumb.active { border-color: #6366f1; }
+    .thumb:hover { border-color: #a5b4fc; }
+
+    /* Record cards (printable grid) */
+    .records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .record-card { background: white; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .record-card img { width: 100%; display: block; max-height: 260px; object-fit: contain; background: #f8fafc; }
+    .record-info { padding: 1rem; }
+    .record-num { font-size: 0.7rem; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+    .record-label { font-weight: 700; color: #1a1a2e; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .record-note { font-size: 0.82rem; color: #6b7280; line-height: 1.5; }
+
+    /* No records placeholder */
+    .no-records { text-align: center; padding: 4rem 2rem; background: white; border-radius: 14px; border: 2px dashed #e2e8f0; color: #94a3b8; }
+    .no-records .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .no-records p { font-size: 0.95rem; line-height: 1.7; }
+
+    /* Print header (only visible when printing) */
+    .print-header { display: none; }
+    @media print {
+      .print-header { display: block; text-align: center; border-bottom: 2px solid #1a1a2e; padding-bottom: 1rem; margin-bottom: 2rem; }
+      .print-header h2 { font-size: 1.3rem; font-weight: 800; }
+      .print-header p { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
+      .slideshow-section { display: none; }
+    }
+
+    footer { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: #9ca3af; background: #1a1a2e; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">Medical Documentation — Jay Alexander — Submitted for Court Consideration</div>
+
+<div class="hero">
+  <div class="hero-badge">🩺 Medical Records</div>
+  <h1>Jay Alexander — Medical Documentation</h1>
+  <p>Records supporting the cervical pinched nerve diagnosis that impacted Mr. Alexander's ability to work and maintain court-ordered payments.</p>
+</div>
+
+<div class="container">
+
+  <!-- Print header (shows only when printing) -->
+  <div class="print-header">
+    <h2>Jay Alexander — Medical Records</h2>
+    <p>Submitted for Court Consideration &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Probation Case</p>
+  </div>
+
+  <!-- Nav buttons -->
+  <div class="nav-btns no-print">
+    <a href="/" class="nav-btn btn-back">← Back to Statement</a>
+    <button onclick="window.print()" class="nav-btn btn-print">🖨️ Print Records</button>
+  </div>
+
+  <!-- Medical context -->
+  <div class="context-box">
+    <h3>🩺 About These Records</h3>
+    <p>The documents below are Mr. Alexander's medical records related to a cervical pinched nerve (cervical radiculopathy) injury. This condition caused significant pain, limited mobility, and directly impacted his ability to perform physical labor and maintain his previous income level. These records are submitted to provide the court with verified medical context for the disruption in payments.</p>
+  </div>
+
+  <!-- Slideshow (shown on screen) -->
+  <div class="slideshow-section no-print" id="slideshowSection">
+    <h2>📋 Medical Records — Slideshow View</h2>
+
+    <div class="slideshow" id="slideshow">
+      {% if records %}
+        {% for rec in records %}
+        <div class="slide {% if loop.first %}active{% endif %}">
+          <img src="{{ rec.url }}" alt="{{ rec.label }}">
+          <div class="slide-caption">
+            <strong>Record {{ loop.index }}:</strong> {{ rec.label }}
+            {% if rec.note %} — {{ rec.note }}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:4rem 2rem; text-align:center; color:#475569;">
+          <div style="font-size:3rem; margin-bottom:1rem;">📂</div>
+          <p style="font-size:0.95rem; color:#94a3b8;">Medical records will appear here once uploaded.<br>Jay is sending photos via Telegram.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if records %}
+    <div class="slideshow-controls">
+      <button class="ctrl-btn" onclick="changeSlide(-1)">◀ Prev</button>
+      <span class="slide-counter" id="slideCounter">1 / {{ records|length }}</span>
+      <button class="ctrl-btn" onclick="changeSlide(1)">Next ▶</button>
+    </div>
+
+    <div class="thumb-strip">
+      {% for rec in records %}
+      <img src="{{ rec.url }}" class="thumb {% if loop.first %}active{% endif %}" onclick="goToSlide({{ loop.index0 }})" alt="Record {{ loop.index }}">
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Printable grid (shown when printing + on screen) -->
+  <div>
+    <h2 style="font-size:1.1rem; font-weight:800; margin-bottom:1rem; color:#1a1a2e; padding-bottom:0.5rem; border-bottom:2px solid #e2e8f0;">📄 All Records — Printable View</h2>
+
+    {% if records %}
+    <div class="records-grid">
+      {% for rec in records %}
+      <div class="record-card">
+        <img src="{{ rec.url }}" alt="{{ rec.label }}">
+        <div class="record-info">
+          <div class="record-num">Record {{ loop.index }} of {{ records|length }}</div>
+          <div class="record-label">{{ rec.label }}</div>
+          {% if rec.note %}<div class="record-note">{{ rec.note }}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-records">
+      <div class="icon">📋</div>
+      <p>Medical records are being gathered.<br>Check back shortly — photos are being sent and will appear here automatically.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<footer>
+  Jay Alexander &nbsp;·&nbsp; Medical Documentation &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Prepared for Court
+</footer>
+
+<script>
+var currentSlide = 0;
+var slides = document.querySelectorAll('.slide');
+var thumbs = document.querySelectorAll('.thumb');
+
+function goToSlide(n) {
+  if (!slides.length) return;
+  slides[currentSlide].classList.remove('active');
+  if (thumbs[currentSlide]) thumbs[currentSlide].classList.remove('active');
+  currentSlide = (n + slides.length) % slides.length;
+  slides[currentSlide].classList.add('active');
+  if (thumbs[currentSlide]) thumbs[currentSlide].classList.add('active');
+  var counter = document.getElementById('slideCounter');
+  if (counter) counter.textContent = (currentSlide + 1) + ' / ' + slides.length;
+}
+
+function changeSlide(dir) {
+  goToSlide(currentSlide + dir);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') changeSlide(-1);
+  if (e.key === 'ArrowRight') changeSlide(1);
+});
+</script>
+
+</body>
+</html>
